@@ -21,6 +21,13 @@
 		"@wordpress/interactivity": "^5.4.0"
 	},
 	"devDependencies": {
-		"@wordpress/scripts": "^27.6.0"
+		"@wordpress/scripts": "^32.5.0"
+	},
+	"allowScripts": {
+		"@parcel/watcher@2.5.6": true,
+		"core-js@3.49.0": true,
+		"fsevents@2.3.3": true,
+		"core-js-pure@3.49.0": true,
+		"unrs-resolver@1.12.2": true
 	}
 }
