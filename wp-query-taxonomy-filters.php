@@ -8,7 +8,7 @@
  * Author:            CTLT WordPress
  * License:           GPL-2.0-or-later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
- * Text Domain:       query-taxonomy-filters
+ * Text Domain:       wp-query-loop-extension-frontend-taxonomy-filter
  *
  * @package           query-taxonomy-filters
  */
@@ -103,6 +103,7 @@ function pre_render_block( $pre_render, $parsed_block ) {
 			}
 
 			// Loop through $_GET.
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 			foreach ( $_GET as $key => $value ) {
 				// Check if the key matches the pattern $category_identifier.
 

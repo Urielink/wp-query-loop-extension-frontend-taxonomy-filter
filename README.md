@@ -5,8 +5,10 @@ Stable tag: 0.1.1
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-# WP Query Block Extension - Taxonomy Filters
+Add taxonomy filter in the frontend page that filters posts returned from the query block.
 
-Add taxonomy filter in the frontend page that filters the posts returned from the query block.
+== Description ==
 
-Documentation available at [https://cms.ubc.ca/support/cms-manual/list-of-blocks/wp-query-block-extension-taxonomy-filters/](https://cms.ubc.ca/support/cms-manual/list-of-blocks/wp-query-block-extension-taxonomy-filters/).
+Add taxonomy filter functionality to the WP Query block. Allows frontend filtering of posts by taxonomy terms using dropdowns or checkboxes.
+
+Documentation available at https://cms.ubc.ca/support/cms-manual/list-of-blocks/wp-query-block-extension-taxonomy-filters/

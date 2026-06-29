@@ -48,7 +48,7 @@
   "usesContext": [
     "queryId"
   ],
-  "textdomain": "ctlt-gf-saved-forms",
+  "textdomain": "wp-query-loop-extension-frontend-taxonomy-filter",
   "editorScript": "file:./index.js",
   "editorStyle": "file:./index.css",
   "style": "file:./style-index.css",

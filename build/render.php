@@ -15,6 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * @package query-taxonomy-filters
  */
 
+// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
 $taxonomy_type    = sanitize_title( $attributes['selectedTaxonomyType'] );
 $label            = sanitize_text_field( $attributes['label'] );
 $accessible_label = sanitize_text_field( $attributes['accessibleLabel'] );
@@ -150,3 +151,4 @@ if ( ! empty( $accessible_label ) ) {
 		</div>
 	<?php endif; ?>
 </div>
+<?php // phpcs:enable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound ?>
