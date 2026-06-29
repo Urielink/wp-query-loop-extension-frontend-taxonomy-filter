@@ -3,7 +3,7 @@
  * Plugin Name:       WP Query Block Extension - Frontend Taxonomy Filters
  * Description:       Add taxonomy filter in the frontend page that filters the posts returned from the query block.
  * Version:           0.1.1
- * Requires at least: 6.1
+ * Requires at least: 6.5
  * Requires PHP:      7.0
  * Author:            CTLT WordPress
  * License:           GPL-2.0-or-later
