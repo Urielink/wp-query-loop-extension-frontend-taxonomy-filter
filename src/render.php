@@ -16,6 +16,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 
 // phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
+
 $taxonomy_type    = sanitize_title( $attributes['selectedTaxonomyType'] );
 $label            = sanitize_text_field( $attributes['label'] );
 $accessible_label = sanitize_text_field( $attributes['accessibleLabel'] );
@@ -68,18 +69,40 @@ if ( $child_only && 'category' === $taxonomy_type ) {
 	}
 }
 
-$identifier    = 'query-' . $block->context['queryId'] . '-term-' . $attributes['instanceId'];
+// Detect whether the filter is placed outside any query loop (global mode).
+$is_global    = ! isset( $block->context['queryId'] );
+$instance_id  = absint( $attributes['instanceId'] );
+
+$identifier = $is_global
+	? 'global-filter-term-' . $instance_id
+	: 'query-' . absint( $block->context['queryId'] ) . '-term-' . $instance_id;
+
+// Resolve the currently selected term(s) from the URL.
 $selected_term = ( 'select' === $input_type ) ? '' : array();
 
-// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-if ( ! empty( $_GET[ $identifier ] ) ) {
+if ( $is_global ) {
+	// In global mode the URL holds one param per targeted loop (e.g. query-95-term-0).
+	// All loops receive the same value, so we read the first matching param we find.
 	// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-	$selected_term_raw = wp_parse_id_list( wp_unslash( $_GET[ $identifier ] ) );
+	foreach ( $_GET as $key => $raw_value ) {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( preg_match( '/^query-\d+-term-' . $instance_id . '$/', $key ) && ! empty( $raw_value ) ) {
+			$parsed = wp_parse_id_list( wp_unslash( $raw_value ) );
+			$selected_term = ( 'select' === $input_type ) ? ( ! empty( $parsed ) ? $parsed[0] : '' ) : $parsed;
+			break;
+		}
+	}
+} else {
+	// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+	if ( ! empty( $_GET[ $identifier ] ) ) {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$selected_term_raw = wp_parse_id_list( wp_unslash( $_GET[ $identifier ] ) );
 
-	if ( 'select' === $input_type ) {
-		$selected_term = ! empty( $selected_term_raw ) ? $selected_term_raw[0] : '';
-	} else {
-		$selected_term = $selected_term_raw;
+		if ( 'select' === $input_type ) {
+			$selected_term = ! empty( $selected_term_raw ) ? $selected_term_raw[0] : '';
+		} else {
+			$selected_term = $selected_term_raw;
+		}
 	}
 }
 
@@ -103,11 +126,11 @@ if ( ! empty( $accessible_label ) ) {
 
 ?>
 <div
-	<?php echo get_block_wrapper_attributes(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?> 
+	<?php echo get_block_wrapper_attributes(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 	data-wp-interactive="ctlt-query-tax-filter"
 	data-wp-watch="callbacks.navigateToDestination"
-	filter-id="<?php echo esc_attr( $attributes['instanceId'] ); ?>"
-	<?php echo wp_interactivity_data_wp_context( array( 'selectedTerm' => $selected_term ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?> 
+	filter-id="<?php echo esc_attr( $instance_id ); ?>"
+	<?php echo wp_interactivity_data_wp_context( array( 'selectedTerm' => $selected_term, 'isGlobal' => $is_global ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 >
 	<div class="live-region screen-reader-text" aria-live="polite" aria-atomic="true"></div>
 	<?php if ( 'select' === $input_type ) : ?>
@@ -138,7 +161,7 @@ if ( ! empty( $accessible_label ) ) {
 						<input
 							id="<?php echo esc_attr( $identifier . '-checkbox-' . $dropdown_term['id'] ); ?>"
 							type="checkbox"
-							name="<?php echo esc_attr( 'query-' . $attributes['instanceId'] . '-term[]' ); ?>"
+							name="<?php echo esc_attr( 'query-' . $instance_id . '-term[]' ); ?>"
 							value="<?php echo esc_attr( $dropdown_term['id'] ); ?>"
 							data-wp-on--change="actions.onChangeTerm"
 							class="wp-query-filter__checkbox"

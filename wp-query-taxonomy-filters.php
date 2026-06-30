@@ -34,7 +34,7 @@ function init() {
 }
 
 /**
- * Recursive function to retrieves all inner blocks of a given block with a specific inner block name.
+ * Recursive function to retrieve all inner blocks of a given block with a specific inner block name.
  *
  * @param array  $block The block to search for inner blocks.
  * @param string $inner_block_name The name of the inner block to search for.
@@ -58,9 +58,65 @@ function get_inner_blocks( $block, $inner_block_name ) {
 }
 
 /**
+ * Recursively walks the block tree and collects taxonomy filter blocks that sit
+ * outside of any core/query block (global filters).
+ *
+ * @param array $blocks        List of parsed blocks to inspect.
+ * @param array $map           Reference to the map being built: instanceId => taxonomyType.
+ * @param bool  $inside_query  Whether the current recursion is inside a core/query block.
+ */
+function collect_global_filter_blocks( $blocks, &$map, $inside_query = false ) {
+	foreach ( $blocks as $block ) {
+		if ( 'core/query' === $block['blockName'] ) {
+			// Recurse into the query loop but mark it as inside-query so any filter
+			// blocks found there are not added to the global map.
+			collect_global_filter_blocks( $block['innerBlocks'] ?? array(), $map, true );
+		} elseif ( 'ctlt/query-taxonomy-filter' === $block['blockName'] ) {
+			if ( ! $inside_query
+				&& isset( $block['attrs']['instanceId'] )
+				&& ! empty( $block['attrs']['selectedTaxonomyType'] )
+			) {
+				$map[ absint( $block['attrs']['instanceId'] ) ] = sanitize_title( $block['attrs']['selectedTaxonomyType'] );
+			}
+		} else {
+			// Recurse into any other container block (groups, columns, etc.).
+			collect_global_filter_blocks( $block['innerBlocks'] ?? array(), $map, $inside_query );
+		}
+	}
+}
+
+/**
+ * Returns an instanceId => taxonomyType map for all taxonomy filter blocks that
+ * are placed outside any core/query block on the current post.
+ *
+ * Result is computed once per request and cached via a static variable.
+ *
+ * @return array
+ */
+function get_global_taxonomy_filter_map() {
+	static $map = null;
+
+	if ( null !== $map ) {
+		return $map;
+	}
+
+	$map  = array();
+	$post = get_post();
+
+	if ( ! $post || ! has_blocks( $post->post_content ) ) {
+		return $map;
+	}
+
+	$blocks = parse_blocks( $post->post_content );
+	collect_global_filter_blocks( $blocks, $map );
+
+	return $map;
+}
+
+/**
  * Inject new tax query from the filter based on query ID.
  *
- * @param string|null $pre_render The pre-rendered content. Default null.
+ * @param string|null $pre_render   The pre-rendered content. Default null.
  * @param array       $parsed_block The block being rendered.
  *
  * @return string|null The modified pre-rendered block content or the original pre-rendered content if the block name is not 'core/query'.
@@ -78,18 +134,25 @@ function pre_render_block( $pre_render, $parsed_block ) {
 		return $pre_render;
 	}
 
-	// Loop through innerblocks recursively to get all the custom field filters.
+	// Build hash map from filter blocks nested inside this query loop.
 	$inner_tax_blocks = get_inner_blocks( $parsed_block, 'ctlt/query-taxonomy-filter' );
 
-	// Creating a hash map. Key is the filter ID and value is the taxonomy type.
 	$hash_map = array();
-	foreach ( $inner_tax_blocks as $key => $inner_block ) {
+	foreach ( $inner_tax_blocks as $inner_block ) {
 		if ( array_key_exists( 'attrs', $inner_block ) &&
 			array_key_exists( 'instanceId', $inner_block['attrs'] ) &&
 			array_key_exists( 'selectedTaxonomyType', $inner_block['attrs'] )
 		) {
 			$hash_map[ $inner_block['attrs']['instanceId'] ] = $inner_block['attrs']['selectedTaxonomyType'];
 		}
+	}
+
+	// Merge in any global filter blocks (placed outside all query loops).
+	// Global filters affect every query loop on the page simultaneously.
+	$hash_map = array_merge( $hash_map, get_global_taxonomy_filter_map() );
+
+	if ( empty( $hash_map ) ) {
+		return $pre_render;
 	}
 
 	add_filter(
@@ -102,11 +165,8 @@ function pre_render_block( $pre_render, $parsed_block ) {
 				$query['tax_query'] = array();
 			}
 
-			// Loop through $_GET.
 			// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 			foreach ( $_GET as $key => $value ) {
-				// Check if the key matches the pattern $category_identifier.
-
 				if ( preg_match( '/^' . $term_identifier . '(?<instance_id>\d+)$/', $key, $matches ) && ! empty( $value ) && array_key_exists( $matches['instance_id'], $hash_map ) ) {
 					$terms = explode( ',', $value );
 
