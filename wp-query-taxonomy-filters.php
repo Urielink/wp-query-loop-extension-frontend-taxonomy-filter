@@ -149,7 +149,9 @@ function pre_render_block( $pre_render, $parsed_block ) {
 
 	// Merge in any global filter blocks (placed outside all query loops).
 	// Global filters affect every query loop on the page simultaneously.
-	$hash_map = array_merge( $hash_map, get_global_taxonomy_filter_map() );
+	// Use + instead of array_merge() to preserve numeric instanceId keys — array_merge()
+	// reindexes numeric keys starting from 0, which breaks the instanceId → taxonomy lookup.
+	$hash_map = $hash_map + get_global_taxonomy_filter_map();
 
 	if ( empty( $hash_map ) ) {
 		return $pre_render;

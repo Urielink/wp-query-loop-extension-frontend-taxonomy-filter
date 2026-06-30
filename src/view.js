@@ -46,6 +46,8 @@ store( 'ctlt-query-tax-filter', {
 			// never re-run when the filter value changes.
 			const { selectedTerm, isGlobal } = getContext();
 
+			const filterId = ref ? ref.getAttribute( 'filter-id' ) : null;
+
 			// Skip the very first run triggered on element creation, tracked per element.
 			if ( ! initializedElements.has( ref ) ) {
 				initializedElements.add( ref );
@@ -55,8 +57,6 @@ store( 'ctlt-query-tax-filter', {
 			if ( null === ref ) {
 				return;
 			}
-
-			const filterId = ref.getAttribute( 'filter-id' );
 			const value    = Array.isArray( selectedTerm ) ? selectedTerm.join( ',' ) : selectedTerm;
 
 			const { actions } = yield import( '@wordpress/interactivity-router' );
